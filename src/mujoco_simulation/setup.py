@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            't800_sim = mujoco_simulation.simulation:main',
         ],
     },
 )
