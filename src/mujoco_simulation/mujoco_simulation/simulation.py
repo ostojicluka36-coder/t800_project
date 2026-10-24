@@ -2,6 +2,7 @@ import rclpy
 import time
 import mujoco
 import mujoco.viewer
+import numpy as np
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -16,9 +17,14 @@ class T800Sim(Node):
     def run_sim(self):
         with mujoco.viewer.launch_passive(self.model, self.data) as viewer:
             start = time.time()
+            viewer.cam.distance = 5.0
+            viewer.cam.azimuth = 200.0
+
             while viewer.is_running() and time.time() - start < 99999:
                 step_start = time.time()
 
+                control = np.zeros(np.shape(self.data.ctrl))
+                self.data.ctrl = control
                 mujoco.mj_step(self.model, self.data)
 
                 viewer.sync()
