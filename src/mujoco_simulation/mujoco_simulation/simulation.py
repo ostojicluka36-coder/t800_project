@@ -15,6 +15,7 @@ class T800Sim(Node):
         self.data = mujoco.MjData(self.model)
         self.paused = False
         self.theta_offset = 0.0
+        self.K = np.array([-12550.6496, -3931.773512, -4624.85023, -1624.98354])
         with open('/home/luka/faks/master_rad/simulation_environment/t800_project/src/mujoco_simulation/config/t800/stand_t800.yaml') as f:
             try:
                 self.config = yaml.safe_load(f)
@@ -32,6 +33,15 @@ class T800Sim(Node):
         control = kp*(q_des - qp) - kd*qv
         control[0] = 0
         control[6] = 0
+
+        q1, q2 = self.estimate_q()
+        dq1, dq2 = self.estimate_dq()
+
+        x = np.array([q1, q2, dq1, dq2])
+
+        control[0] = -np.dot(self.K, (x - np.array([np.pi/2, 0.0, 0.0, 0.0])))
+        control[0] /= 2
+        control[6] = control[0]
 
         return control
 
@@ -55,9 +65,11 @@ class T800Sim(Node):
         return q1, q2
 
     def estimate_dq(self):
-        gyro_y = self.data.sensor('imu_gyro').data[1]
+        gyro_y = self.data.sensor('imu_link_angular_velocity').data[1]
         dq_enc = self.data.qvel[self.model.joint('J00_HIP_PITCH_L').dofadr[0]]
-        return (gyro_y + dq_enc, -dq_enc) 
+        dq1 = gyro_y + dq_enc
+        dq2 = -dq_enc
+        return dq1, dq2
 
     def key_callback(self, keycode):
         if chr(keycode) == ' ':
